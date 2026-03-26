@@ -1296,7 +1296,7 @@ document.getElementById('play-again-btn').addEventListener('click', startGame);
 
 // Register service worker for PWA
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(() => {});
+  navigator.serviceWorker.register('/CatchThatChicken/sw.js', { scope: '/CatchThatChicken/' }).catch(() => {});
 }
 
 // Preview chicken dance
