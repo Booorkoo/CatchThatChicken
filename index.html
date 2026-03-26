@@ -34,12 +34,110 @@
     width: 100vw;
     height: 100vh;
     background-image: 
-      radial-gradient(circle at 20% 80%, rgba(255,217,61,0.3) 0%, transparent 50%),
-      radial-gradient(circle at 80% 20%, rgba(255,107,53,0.2) 0%, transparent 50%),
-      radial-gradient(circle at 50% 50%, rgba(107,203,119,0.1) 0%, transparent 70%);
+      radial-gradient(circle at 20% 80%, var(--sky1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, var(--sky2) 0%, transparent 50%),
+      radial-gradient(circle at 50% 50%, var(--sky3) 0%, transparent 70%);
+    transition: background 0.5s;
   }
 
-  /* SCREEN MANAGEMENT */
+  /* THEMES */
+  body.theme-farm {
+    --bg: #fff9e6;
+    --ground: #6bcb77;
+    --ground-dark: #4aab5c;
+    --sky1: rgba(255,217,61,0.3);
+    --sky2: rgba(255,107,53,0.2);
+    --sky3: rgba(107,203,119,0.1);
+  }
+  body.theme-space {
+    --bg: #0d0d2b;
+    --ground: #1a1a4e;
+    --ground-dark: #0d0d35;
+    --sky1: rgba(100,60,255,0.3);
+    --sky2: rgba(255,60,180,0.15);
+    --sky3: rgba(60,200,255,0.1);
+    --dark: #ffffff;
+    --yellow: #7b5ea7;
+    --orange: #a855f7;
+    --white: #1a1a3e;
+  }
+  body.theme-beach {
+    --bg: #fff5d6;
+    --ground: #f0c040;
+    --ground-dark: #d4a020;
+    --sky1: rgba(77,150,255,0.3);
+    --sky2: rgba(255,200,50,0.2);
+    --sky3: rgba(100,220,255,0.2);
+  }
+
+  /* THEME PICKER */
+  #theme-picker {
+    display: flex;
+    gap: 12px;
+    margin: 4px 0;
+  }
+  .theme-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    background: var(--white);
+    border: 3px solid var(--dark);
+    border-radius: 16px;
+    padding: 10px 14px;
+    cursor: pointer;
+    box-shadow: 3px 3px 0 var(--dark);
+    transition: transform 0.1s, box-shadow 0.1s;
+    font-family: 'Fredoka One', cursive;
+    font-size: 0.85rem;
+    color: var(--dark);
+  }
+  .theme-btn .theme-icon { font-size: 2rem; }
+  .theme-btn.active {
+    background: var(--yellow);
+    transform: translate(-2px,-2px);
+    box-shadow: 5px 5px 0 var(--dark);
+  }
+  .theme-btn:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 var(--dark); }
+
+  /* ARENA BACKGROUNDS */
+  #arena.theme-farm { background: transparent; }
+
+  #arena.theme-space {
+    background: #0d0d2b;
+  }
+  #arena.theme-beach {
+    background: linear-gradient(180deg, #87ceeb 0%, #87ceeb 60%, #f0c040 60%);
+  }
+
+  /* Space decorations */
+  .space-star {
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: twinkle 2s ease-in-out infinite alternate;
+  }
+  @keyframes twinkle {
+    from { opacity: 0.3; transform: scale(1); }
+    to   { opacity: 1;   transform: scale(1.3); }
+  }
+
+  /* Beach decorations */
+  .beach-wave {
+    position: absolute;
+    bottom: 50px;
+    left: 0; right: 0;
+    height: 20px;
+    background: rgba(100,180,255,0.4);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: wave 2s ease-in-out infinite alternate;
+  }
+  @keyframes wave {
+    from { transform: scaleX(1) translateX(0); }
+    to   { transform: scaleX(1.05) translateX(-10px); }
+  }
   .screen { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.3s; }
   .screen.hidden { opacity: 0; pointer-events: none; }
 
@@ -540,7 +638,7 @@
     left: 0;
     right: 0;
     height: 50px;
-    background: var(--green);
+    background: var(--ground);
     border-top: 4px solid var(--dark);
     display: flex;
     align-items: flex-start;
@@ -554,7 +652,7 @@
     height: 0;
     border-left: 8px solid transparent;
     border-right: 8px solid transparent;
-    border-bottom: 20px solid #4aab5c;
+    border-bottom: 20px solid var(--ground-dark);
     margin-top: -16px;
   }
 </style>
@@ -565,6 +663,17 @@
 <div id="start-screen" class="screen">
   <div class="game-title">Catch That Chicken!</div>
   <div class="chicken-preview" id="preview-chicken">🐔</div>
+  <div id="theme-picker">
+    <button class="theme-btn active" data-theme="farm">
+      <span class="theme-icon">🐄</span>Farm
+    </button>
+    <button class="theme-btn" data-theme="space">
+      <span class="theme-icon">🚀</span>Space
+    </button>
+    <button class="theme-btn" data-theme="beach">
+      <span class="theme-icon">🏖️</span>Beach
+    </button>
+  </div>
   <div class="subtitle">Tap the chicken before it escapes! 🥚</div>
   <button class="start-btn" id="start-btn">PLAY! 🐔</button>
   <div class="high-score-display" id="start-hi">Best: 0 chickens</div>
@@ -1290,6 +1399,76 @@ startLbBtn.className = 'leaderboard-btn';
 startLbBtn.textContent = '🏆 Leaderboard';
 startLbBtn.addEventListener('click', () => { renderLeaderboard(); showScreen('leaderboard-screen'); });
 document.getElementById('start-screen').appendChild(startLbBtn);
+// ──────────────────────────────────────────────────────────────
+
+// ── THEMES ────────────────────────────────────────────────────
+const THEMES = {
+  farm:  { chicken: '🐔', emoji: '🐄', groundLabel: 'grass' },
+  space: { chicken: '🐔', emoji: '🚀', groundLabel: 'moon'  },
+  beach: { chicken: '🐔', emoji: '🏖️', groundLabel: 'sand'  },
+};
+let currentTheme = localStorage.getItem('kokoska_theme') || 'farm';
+
+function applyTheme(theme) {
+  currentTheme = theme;
+  localStorage.setItem('kokoska_theme', theme);
+  document.body.className = 'theme-' + theme;
+  document.getElementById('arena').className = 'theme-' + theme;
+
+  // Update active button
+  document.querySelectorAll('.theme-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.theme === theme);
+  });
+
+  // Update chicken emoji per theme
+  const chick = THEMES[theme].chicken;
+  document.getElementById('chicken').textContent = chick;
+  document.getElementById('preview-chicken').textContent = chick;
+
+  // Rebuild arena decorations
+  rebuildArenaDecorations(theme);
+}
+
+function rebuildArenaDecorations(theme) {
+  // Remove old decorations
+  document.querySelectorAll('.space-star, .beach-wave, .farm-cloud').forEach(e => e.remove());
+
+  if (theme === 'space') {
+    // Add stars
+    for (let i = 0; i < 30; i++) {
+      const star = document.createElement('div');
+      star.className = 'space-star';
+      const size = 1 + Math.random() * 3;
+      star.style.cssText = `
+        width:${size}px; height:${size}px;
+        left:${Math.random()*100}%; top:${Math.random()*85}%;
+        animation-delay:${Math.random()*2}s;
+        animation-duration:${1.5+Math.random()*2}s;
+      `;
+      document.getElementById('arena').appendChild(star);
+    }
+  } else if (theme === 'beach') {
+    // Add waves
+    for (let i = 0; i < 3; i++) {
+      const wave = document.createElement('div');
+      wave.className = 'beach-wave';
+      wave.style.cssText = `
+        bottom:${45 + i*8}px;
+        opacity:${0.3 + i*0.15};
+        animation-delay:${i*0.4}s;
+      `;
+      document.getElementById('arena').appendChild(wave);
+    }
+  }
+}
+
+// Theme button clicks
+document.querySelectorAll('.theme-btn').forEach(btn => {
+  btn.addEventListener('click', () => applyTheme(btn.dataset.theme));
+});
+
+// Apply saved theme on load
+applyTheme(currentTheme);
 // ──────────────────────────────────────────────────────────────
 
 document.getElementById('start-btn').addEventListener('click', startGame);
