@@ -1,1 +1,17 @@
-{\n  "short_name": "CatchChicken",\n  "name": "Catch That Chicken",\n  "icons": [\n    {\n      "src": "images/icon-192x192.png",\n      "type": "image/png",\n      "sizes": "192x192"\n    },\n    {\n      "src": "images/icon-512x512.png",\n      "type": "image/png",\n      "sizes": "512x512"\n    }\n  ],\n  "start_url": ".",\n  "display": "standalone",\n  "theme_color": "#ffffff",\n  "background_color": "#ffffff"\n}
+{
+  "name": "Catch That Chicken!",
+  "short_name": "Catch Chicken",
+  "description": "Catch the chicken before it escapes!",
+  "start_url": "/",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#fff9e6",
+  "theme_color": "#ff6b35",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23ff6b35'/><text y='78' x='50' text-anchor='middle' font-size='68'>🐔</text></svg>",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
