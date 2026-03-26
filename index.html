@@ -1294,6 +1294,11 @@ document.getElementById('start-screen').appendChild(startLbBtn);
 document.getElementById('start-btn').addEventListener('click', startGame);
 document.getElementById('play-again-btn').addEventListener('click', startGame);
 
+// Register service worker for PWA
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
 // Preview chicken dance
 document.getElementById('preview-chicken').addEventListener('click', () => {
   const el = document.getElementById('preview-chicken');
