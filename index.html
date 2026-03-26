@@ -1245,10 +1245,9 @@ function showLifeLost(x, y) {
   setTimeout(() => el.remove(), 800);
 }
 
-// Chicken tap/click
-chickenEl.addEventListener('pointerdown', (e) => {
+// Shared catch logic — used by both player tap and AI bot
+function catchChicken() {
   if (!gameRunning || isCaught) return;
-  e.stopPropagation();
   isCaught = true;
 
   const txt = SOUNDS.caught[Math.floor(Math.random() * SOUNDS.caught.length)];
@@ -1261,7 +1260,6 @@ chickenEl.addEventListener('pointerdown', (e) => {
 
   chickenEl.classList.add('caught');
 
-  // Chicken jolts then keeps running — pick new target immediately
   const { tx, ty } = pickNewTarget(chickenX, chickenY);
   targetX = tx; targetY = ty;
   chickenSpeed = Math.min(3 + score * 0.5, 16);
@@ -1270,6 +1268,13 @@ chickenEl.addEventListener('pointerdown', (e) => {
     chickenEl.classList.remove('caught');
     isCaught = false;
   }, 350);
+}
+
+// Chicken tap/click — player
+chickenEl.addEventListener('pointerdown', (e) => {
+  if (!gameRunning || isCaught) return;
+  e.stopPropagation();
+  catchChicken();
 });
 
 // Miss tap — only count if NOT clicking on the chicken
@@ -1503,7 +1508,8 @@ startLbBtn.addEventListener('click', () => { renderLeaderboard(); showScreen('le
 document.getElementById('start-screen').appendChild(startLbBtn);
 // ──────────────────────────────────────────────────────────────
 
-// ── THEMES ────────────────────────────────────────────────────
+document.getElementById('start-btn').addEventListener('click', startGame);
+document.getElementById('play-again-btn').addEventListener('click', startGame);
 const THEMES = {
   farm:  { chicken: '🐔', emoji: '🐄', groundLabel: 'grass' },
   space: { chicken: '🐔', emoji: '🚀', groundLabel: 'moon'  },
@@ -1572,9 +1578,6 @@ document.querySelectorAll('.theme-btn').forEach(btn => {
 // Apply saved theme on load
 applyTheme(currentTheme);
 // ──────────────────────────────────────────────────────────────
-
-document.getElementById('start-btn').addEventListener('click', startGame);
-document.getElementById('play-again-btn').addEventListener('click', startGame);
 
 // Register service worker for PWA
 if ('serviceWorker' in navigator) {
