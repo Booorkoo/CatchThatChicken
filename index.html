@@ -387,15 +387,64 @@
   /* FEATHERS */
   .feather {
     position: absolute;
-    font-size: 1.2rem;
     pointer-events: none;
     z-index: 15;
-    animation: featherFall 0.8s ease-out forwards;
+    transform-origin: center center;
   }
 
-  @keyframes featherFall {
-    0% { transform: translate(0,0) rotate(0) scale(1); opacity: 1; }
+  .feather-fly {
+    animation: featherFly var(--dur) cubic-bezier(0.2, 0.8, 0.4, 1) forwards;
+  }
+  @keyframes featherFly {
+    0%   { transform: translate(0,0) rotate(0deg) scale(1);    opacity: 1; }
+    60%  { opacity: 1; }
+    100% { transform: translate(var(--dx), var(--dy)) rotate(var(--dr)) scale(0.3); opacity: 0; }
+  }
+
+  .feather-spin {
+    animation: featherSpin var(--dur) ease-out forwards;
+  }
+  @keyframes featherSpin {
+    0%   { transform: translate(0,0) rotate(0deg) scale(1.2);  opacity: 1; }
+    40%  { transform: translate(var(--mx), var(--my)) rotate(180deg) scale(1); opacity: 1; }
     100% { transform: translate(var(--dx), var(--dy)) rotate(var(--dr)) scale(0); opacity: 0; }
+  }
+
+  .feather-burst {
+    animation: featherBurst var(--dur) cubic-bezier(0.1, 0.9, 0.3, 1) forwards;
+  }
+  @keyframes featherBurst {
+    0%   { transform: translate(0,0) scale(0) rotate(0deg);    opacity: 0; }
+    15%  { transform: translate(var(--mx), var(--my)) scale(1.8) rotate(45deg); opacity: 1; }
+    100% { transform: translate(var(--dx), var(--dy)) scale(0.2) rotate(var(--dr)); opacity: 0; }
+  }
+
+  /* Flash ring on catch */
+  .catch-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 4px solid gold;
+    pointer-events: none;
+    z-index: 14;
+    animation: catchRing 0.5s ease-out forwards;
+  }
+  @keyframes catchRing {
+    0%   { transform: translate(-50%, -50%) scale(0.2); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(3);   opacity: 0; }
+  }
+
+  /* Star burst */
+  .catch-star {
+    position: absolute;
+    font-size: 1.6rem;
+    pointer-events: none;
+    z-index: 16;
+    animation: starPop var(--dur) ease-out forwards;
+  }
+  @keyframes starPop {
+    0%   { transform: translate(0,0) scale(0) rotate(0deg);   opacity: 1; }
+    40%  { transform: translate(var(--mx),var(--my)) scale(1.4) rotate(120deg); opacity: 1; }
+    100% { transform: translate(var(--dx),var(--dy)) scale(0) rotate(var(--dr)); opacity: 0; }
   }
 
   /* GAME OVER SCREEN */
@@ -1050,19 +1099,72 @@ function showMiss(x, y) {
 
 // Feathers
 function spawnFeathers(x, y) {
-  for (let i = 0; i < 6; i++) {
+  const FEATHER_EMOJIS = ['🪶','🪶','🪶','🪶','✨','⭐','💫'];
+  const STAR_EMOJIS    = ['⭐','✨','💥','🌟'];
+  const COUNT = 14;
+
+  // 1. Flash ring
+  const ring = document.createElement('div');
+  ring.className = 'catch-ring';
+  ring.style.cssText = `left:${x}px; top:${y}px; width:60px; height:60px;`;
+  arenaEl.appendChild(ring);
+  setTimeout(() => ring.remove(), 500);
+
+  // 2. Feathers — fly outward in all directions
+  for (let i = 0; i < COUNT; i++) {
     const f = document.createElement('div');
-    f.className = 'feather';
-    f.textContent = ['🪶', '✨', '💨'][i % 3];
-    const angle = (i / 6) * Math.PI * 2;
-    const dist = 40 + Math.random() * 60;
+    const angle = (i / COUNT) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
+    const dist  = 60 + Math.random() * 100;
+    const dur   = 0.6 + Math.random() * 0.5;
+    const isFeather = i < 8;
+
+    f.className = 'feather ' + (isFeather ? (i % 2 === 0 ? 'feather-fly' : 'feather-spin') : 'catch-star');
+    f.textContent = isFeather
+      ? FEATHER_EMOJIS[Math.floor(Math.random() * FEATHER_EMOJIS.length)]
+      : STAR_EMOJIS[Math.floor(Math.random() * STAR_EMOJIS.length)];
+
+    const dx = Math.cos(angle) * dist;
+    const dy = Math.sin(angle) * dist;
+    // midpoint with slight upward arc
+    const mx = Math.cos(angle) * dist * 0.4;
+    const my = Math.sin(angle) * dist * 0.4 - 20;
+
+    f.style.setProperty('--dx',  dx + 'px');
+    f.style.setProperty('--dy',  dy + 'px');
+    f.style.setProperty('--mx',  mx + 'px');
+    f.style.setProperty('--my',  my + 'px');
+    f.style.setProperty('--dr',  (Math.random() * 720 - 360) + 'deg');
+    f.style.setProperty('--dur', dur + 's');
+    f.style.cssText += `
+      left:${x}px; top:${y}px;
+      font-size:${isFeather ? 1.1 + Math.random() * 0.8 : 1.4 + Math.random() * 0.6}rem;
+      animation-delay:${i < 4 ? 0 : Math.random() * 0.08}s;
+    `;
+    arenaEl.appendChild(f);
+    setTimeout(() => f.remove(), (dur + 0.15) * 1000);
+  }
+
+  // 3. Extra burst feathers from center — delayed second wave
+  for (let i = 0; i < 5; i++) {
+    const f = document.createElement('div');
+    f.className = 'feather feather-burst';
+    f.textContent = '🪶';
+    const angle = Math.random() * Math.PI * 2;
+    const dist  = 30 + Math.random() * 50;
+    const dur   = 0.5 + Math.random() * 0.3;
     f.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
     f.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+    f.style.setProperty('--mx', Math.cos(angle) * 15 + 'px');
+    f.style.setProperty('--my', Math.sin(angle) * 15 - 10 + 'px');
     f.style.setProperty('--dr', (Math.random() * 360) + 'deg');
-    f.style.left = x + 'px';
-    f.style.top = y + 'px';
+    f.style.setProperty('--dur', dur + 's');
+    f.style.cssText += `
+      left:${x}px; top:${y}px;
+      font-size:${0.9 + Math.random() * 0.5}rem;
+      animation-delay:${0.1 + Math.random() * 0.1}s;
+    `;
     arenaEl.appendChild(f);
-    setTimeout(() => f.remove(), 800);
+    setTimeout(() => f.remove(), (dur + 0.25) * 1000);
   }
 }
 
