@@ -118,8 +118,16 @@
     opacity: 0.6;
   }
 
-  /* GAME SCREEN */
-  #game-screen { padding: 0; }
+  /* Force fullscreen feel — hide URL bar on mobile scroll trick */
+  html {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  body {
+    height: 100%;
+    min-height: 100dvh;
+  }
 
   #hud {
     position: absolute;
@@ -134,25 +142,25 @@
 
   .hud-score {
     font-family: 'Fredoka One', cursive;
-    font-size: 2rem;
+    font-size: 1.3rem;
     color: var(--dark);
     background: var(--yellow);
-    padding: 5px 18px;
+    padding: 4px 14px;
     border-radius: 50px;
-    border: 3px solid var(--dark);
-    box-shadow: 3px 3px 0 var(--dark);
+    border: 2px solid var(--dark);
+    box-shadow: 2px 2px 0 var(--dark);
   }
 
   .hud-lives {
     font-family: 'Fredoka One', cursive;
-    font-size: 1.5rem;
+    font-size: 1rem;
     color: var(--dark);
     background: var(--white);
-    padding: 5px 14px;
+    padding: 4px 10px;
     border-radius: 50px;
-    border: 3px solid var(--dark);
-    box-shadow: 3px 3px 0 var(--dark);
-    letter-spacing: 2px;
+    border: 2px solid var(--dark);
+    box-shadow: 2px 2px 0 var(--dark);
+    letter-spacing: 1px;
     transition: background 0.2s;
   }
 
@@ -864,7 +872,7 @@ const arenaEl = document.getElementById('arena');
 
 let score = 0;
 let misses = 0;
-const MAX_MISSES = 10;
+const MAX_MISSES = 5;
 let timerInterval = null;
 let speechTimeout = null;
 let chickenX = 50, chickenY = 50;
@@ -975,7 +983,7 @@ function moveChicken() {
   const dy = targetY - chickenY;
   const dist = Math.sqrt(dx*dx + dy*dy);
 
-  if (dist < 10) {
+  if (dist < 10 || (chickenSpeed > 8 && Math.random() < 0.03)) {
     // Reached target, pick new one
     const { tx, ty } = pickNewTarget(chickenX, chickenY);
     targetX = tx; targetY = ty;
@@ -1010,7 +1018,7 @@ function updateLives() {
   const hearts = '❤️'.repeat(MAX_MISSES - misses) + '🖤'.repeat(misses);
   const livesEl = document.getElementById('lives-display');
   livesEl.textContent = hearts;
-  if (misses >= 7) livesEl.classList.add('danger');
+  if (misses >= 3) livesEl.classList.add('danger');
   else livesEl.classList.remove('danger');
 }
 
@@ -1044,7 +1052,7 @@ chickenEl.addEventListener('pointerdown', (e) => {
   // Chicken jolts then keeps running — pick new target immediately
   const { tx, ty } = pickNewTarget(chickenX, chickenY);
   targetX = tx; targetY = ty;
-  chickenSpeed = Math.min(3 + score * 0.2, 11);
+  chickenSpeed = Math.min(3 + score * 0.5, 16);
 
   setTimeout(() => {
     chickenEl.classList.remove('caught');
@@ -1052,16 +1060,16 @@ chickenEl.addEventListener('pointerdown', (e) => {
   }, 350);
 });
 
-// Miss tap
+// Miss tap — only count if NOT clicking on the chicken
 arenaEl.addEventListener('pointerdown', (e) => {
   if (!gameRunning) return;
+  if (chickenEl.contains(e.target) || e.target === chickenEl) return;
   const arenaTop = arenaEl.getBoundingClientRect().top;
   misses++;
   updateLives();
   showMiss(e.clientX, e.clientY - arenaTop);
   showLifeLost(e.clientX + 20, e.clientY - arenaTop - 20);
   playMiss();
-  // Chicken taunts on miss
   if (Math.random() < 0.5) {
     const txt = SOUNDS.miss[Math.floor(Math.random() * SOUNDS.miss.length)];
     showSpeech(txt, chickenX, chickenY);
