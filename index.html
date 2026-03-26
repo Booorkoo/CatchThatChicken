@@ -1,11 +1,1238 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#ff6b35">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Catch That Chicken! 🐔</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23ff6b35'/><text y='78' x='50' text-anchor='middle' font-size='68'>🐔</text></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23ff6b35'/><text y='78' x='50' text-anchor='middle' font-size='68'>🐔</text></svg>">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;900&display=swap');
+
+  :root {
+    --bg: #fff9e6;
+    --yellow: #ffd93d;
+    --orange: #ff6b35;
+    --red: #ff2d55;
+    --green: #6bcb77;
+    --blue: #4d96ff;
+    --dark: #2d2d2d;
+    --white: #ffffff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; user-select: none; -webkit-user-select: none; }
+
+  body {
+    background: var(--bg);
+    font-family: 'Nunito', sans-serif;
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+    background-image: 
+      radial-gradient(circle at 20% 80%, rgba(255,217,61,0.3) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(255,107,53,0.2) 0%, transparent 50%),
+      radial-gradient(circle at 50% 50%, rgba(107,203,119,0.1) 0%, transparent 70%);
+  }
+
+  /* SCREEN MANAGEMENT */
+  .screen { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.3s; }
+  .screen.hidden { opacity: 0; pointer-events: none; }
+
+  /* START SCREEN */
+  #start-screen {
+    gap: 20px;
+    padding: 30px;
+  }
+
+  .game-title {
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(3rem, 15vw, 5rem);
+    color: var(--orange);
+    text-shadow: 4px 4px 0 var(--red), 6px 6px 0 rgba(0,0,0,0.1);
+    line-height: 1;
+    text-align: center;
+    animation: titleBounce 1s ease-in-out infinite alternate;
+  }
+
+  @keyframes titleBounce {
+    from { transform: rotate(-2deg) scale(1); }
+    to { transform: rotate(2deg) scale(1.05); }
+  }
+
+  .chicken-preview {
+    font-size: 6rem;
+    animation: previewDance 0.5s ease-in-out infinite alternate;
+    cursor: pointer;
+    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.15));
+  }
+
+  @keyframes previewDance {
+    from { transform: rotate(-10deg) translateY(0); }
+    to { transform: rotate(10deg) translateY(-10px); }
+  }
+
+  .subtitle {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--dark);
+    text-align: center;
+    background: var(--yellow);
+    padding: 10px 20px;
+    border-radius: 50px;
+    border: 3px solid var(--dark);
+    box-shadow: 3px 3px 0 var(--dark);
+  }
+
+  .start-btn {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.8rem;
+    color: var(--white);
+    background: var(--green);
+    border: 4px solid var(--dark);
+    border-radius: 20px;
+    padding: 15px 50px;
+    cursor: pointer;
+    box-shadow: 5px 5px 0 var(--dark);
+    transition: transform 0.1s, box-shadow 0.1s;
+    animation: btnPulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes btnPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+
+  .start-btn:active {
+    transform: translate(3px, 3px);
+    box-shadow: 2px 2px 0 var(--dark);
+  }
+
+  .high-score-display {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--dark);
+    opacity: 0.6;
+  }
+
+  /* GAME SCREEN */
+  #game-screen { padding: 0; }
+
+  #hud {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  .hud-score {
+    font-family: 'Fredoka One', cursive;
+    font-size: 2rem;
+    color: var(--dark);
+    background: var(--yellow);
+    padding: 5px 18px;
+    border-radius: 50px;
+    border: 3px solid var(--dark);
+    box-shadow: 3px 3px 0 var(--dark);
+  }
+
+  .hud-lives {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.5rem;
+    color: var(--dark);
+    background: var(--white);
+    padding: 5px 14px;
+    border-radius: 50px;
+    border: 3px solid var(--dark);
+    box-shadow: 3px 3px 0 var(--dark);
+    letter-spacing: 2px;
+    transition: background 0.2s;
+  }
+
+  .hud-lives.danger { background: #ffe0e0; animation: livesShake 0.3s; }
+  @keyframes livesShake {
+    0%, 100% { transform: rotate(0) scale(1); }
+    25% { transform: rotate(-5deg) scale(1.1); }
+    75% { transform: rotate(5deg) scale(1.1); }
+  }
+
+  .life-lost {
+    position: absolute;
+    font-size: 2rem;
+    pointer-events: none;
+    z-index: 20;
+    animation: lifeLostAnim 0.8s ease-out forwards;
+  }
+  @keyframes lifeLostAnim {
+    0% { opacity: 1; transform: scale(1.5) translateY(0); }
+    100% { opacity: 0; transform: scale(0.5) translateY(-60px); }
+  }
+
+  #arena {
+    position: absolute;
+    inset: 0;
+    top: 80px;
+  }
+
+  /* CHICKEN */
+  #chicken {
+    position: absolute;
+    font-size: clamp(3rem, 12vw, 5rem);
+    cursor: pointer;
+    transition: none;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+    z-index: 5;
+    will-change: transform, left, top;
+    line-height: 1;
+  }
+
+  #chicken.caught {
+    animation: caughtJolt 0.35s ease-out forwards;
+  }
+
+  @keyframes caughtJolt {
+    0%   { transform: scale(1) rotate(0); filter: brightness(1) drop-shadow(0 4px 8px rgba(0,0,0,0.2)); }
+    30%  { transform: scale(1.7) rotate(-15deg); filter: brightness(2.5) drop-shadow(0 0 20px gold); }
+    60%  { transform: scale(0.85) rotate(10deg); filter: brightness(1.5); }
+    100% { transform: scale(1) rotate(0); filter: brightness(1) drop-shadow(0 4px 8px rgba(0,0,0,0.2)); }
+  }
+
+  #chicken.running-left { transform: scaleX(-1); }
+  #chicken.running-right { transform: scaleX(1); }
+
+  /* SPEECH BUBBLE */
+  #speech {
+    position: absolute;
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(1rem, 5vw, 1.4rem);
+    background: var(--white);
+    border: 3px solid var(--dark);
+    border-radius: 15px;
+    padding: 8px 14px;
+    box-shadow: 3px 3px 0 var(--dark);
+    pointer-events: none;
+    z-index: 6;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.15s;
+    color: var(--dark);
+  }
+
+  #speech.visible { opacity: 1; }
+  #speech::after {
+    content: '';
+    position: absolute;
+    bottom: -13px;
+    left: 15px;
+    border: 7px solid transparent;
+    border-top-color: var(--dark);
+  }
+  #speech::before {
+    content: '';
+    position: absolute;
+    bottom: -9px;
+    left: 16px;
+    border: 6px solid transparent;
+    border-top-color: var(--white);
+    z-index: 1;
+  }
+
+  /* SCORE POPUP */
+  .score-pop {
+    position: absolute;
+    font-family: 'Fredoka One', cursive;
+    font-size: 2rem;
+    color: var(--orange);
+    text-shadow: 2px 2px 0 var(--dark);
+    pointer-events: none;
+    z-index: 20;
+    animation: scoreFloat 0.8s ease-out forwards;
+  }
+
+  @keyframes scoreFloat {
+    0% { transform: scale(1.5) translateY(0); opacity: 1; }
+    100% { transform: scale(0.8) translateY(-60px); opacity: 0; }
+  }
+
+  /* MISS EFFECT */
+  .miss-text {
+    position: absolute;
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.5rem;
+    color: var(--red);
+    pointer-events: none;
+    z-index: 20;
+    animation: missFloat 0.7s ease-out forwards;
+  }
+
+  @keyframes missFloat {
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-40px) scale(0.5); }
+  }
+
+  /* FEATHERS */
+  .feather {
+    position: absolute;
+    font-size: 1.2rem;
+    pointer-events: none;
+    z-index: 15;
+    animation: featherFall 0.8s ease-out forwards;
+  }
+
+  @keyframes featherFall {
+    0% { transform: translate(0,0) rotate(0) scale(1); opacity: 1; }
+    100% { transform: translate(var(--dx), var(--dy)) rotate(var(--dr)) scale(0); opacity: 0; }
+  }
+
+  /* GAME OVER SCREEN */
+  #gameover-screen {
+    gap: 20px;
+    padding: 30px;
+  }
+
+  .gameover-emoji {
+    font-size: 5rem;
+    animation: gounceBounce 0.6s ease-in-out infinite alternate;
+  }
+
+  @keyframes gounceBounce {
+    from { transform: scale(1) rotate(-5deg); }
+    to { transform: scale(1.1) rotate(5deg); }
+  }
+
+  .gameover-title {
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(2rem, 10vw, 3rem);
+    color: var(--red);
+    text-shadow: 3px 3px 0 var(--dark);
+    text-align: center;
+  }
+
+  .final-score-box {
+    background: var(--yellow);
+    border: 4px solid var(--dark);
+    border-radius: 20px;
+    padding: 20px 40px;
+    text-align: center;
+    box-shadow: 5px 5px 0 var(--dark);
+  }
+
+  .final-score-label {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--dark);
+    opacity: 0.7;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+
+  .final-score-num {
+    font-family: 'Fredoka One', cursive;
+    font-size: 4rem;
+    color: var(--orange);
+    line-height: 1;
+  }
+
+  .new-record {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.3rem;
+    color: var(--green);
+    background: var(--white);
+    border: 3px solid var(--dark);
+    padding: 5px 15px;
+    border-radius: 50px;
+    box-shadow: 2px 2px 0 var(--dark);
+    animation: recordPop 0.5s cubic-bezier(0.68,-0.55,0.265,1.55);
+  }
+
+  @keyframes recordPop {
+    from { transform: scale(0) rotate(-10deg); }
+    to { transform: scale(1) rotate(0); }
+  }
+
+  .play-again-btn {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.6rem;
+    color: var(--white);
+    background: var(--orange);
+    border: 4px solid var(--dark);
+    border-radius: 20px;
+    padding: 12px 40px;
+    cursor: pointer;
+    box-shadow: 5px 5px 0 var(--dark);
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+
+  .play-again-btn:active {
+    transform: translate(3px, 3px);
+    box-shadow: 2px 2px 0 var(--dark);
+  }
+
+  /* COUNTDOWN */
+  #countdown-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    background: rgba(255,249,230,0.85);
+    backdrop-filter: blur(4px);
+  }
+
+  .countdown-num {
+    font-family: 'Fredoka One', cursive;
+    font-size: 20vw;
+    color: var(--orange);
+    text-shadow: 6px 6px 0 var(--dark);
+    animation: countPop 1s cubic-bezier(0.68,-0.55,0.265,1.55) forwards;
+  }
+
+  @keyframes countPop {
+    0% { transform: scale(0) rotate(-20deg); opacity: 0; }
+    60% { transform: scale(1.2) rotate(5deg); opacity: 1; }
+    80% { transform: scale(0.9) rotate(-2deg); opacity: 1; }
+    100% { transform: scale(1) rotate(0); opacity: 0; }
+  }
+
+  /* LEADERBOARD */
+  .leaderboard-btn {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1rem;
+    color: var(--dark);
+    background: var(--white);
+    border: 3px solid var(--dark);
+    border-radius: 50px;
+    padding: 6px 18px;
+    cursor: pointer;
+    box-shadow: 2px 2px 0 var(--dark);
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .leaderboard-btn:active { transform: translate(2px,2px); box-shadow: none; }
+
+  #leaderboard-screen {
+    gap: 14px;
+    padding: 24px 20px;
+    overflow-y: auto;
+  }
+
+  .lb-title {
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(2rem, 8vw, 2.8rem);
+    color: var(--orange);
+    text-shadow: 3px 3px 0 var(--dark);
+  }
+
+  .lb-table {
+    width: 100%;
+    max-width: 340px;
+    border-collapse: collapse;
+  }
+
+  .lb-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--white);
+    border: 3px solid var(--dark);
+    border-radius: 14px;
+    padding: 10px 16px;
+    margin-bottom: 8px;
+    box-shadow: 3px 3px 0 var(--dark);
+    animation: lbRowIn 0.3s cubic-bezier(0.68,-0.55,0.265,1.55) both;
+  }
+  .lb-row:nth-child(1) { background: #fff3cd; animation-delay: 0.05s; }
+  .lb-row:nth-child(2) { background: #f0f0f0; animation-delay: 0.1s; }
+  .lb-row:nth-child(3) { background: #ffe8d6; animation-delay: 0.15s; }
+
+  @keyframes lbRowIn {
+    from { transform: translateX(-30px) scale(0.9); opacity: 0; }
+    to   { transform: translateX(0) scale(1); opacity: 1; }
+  }
+
+  .lb-rank {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.4rem;
+    width: 36px;
+    text-align: center;
+  }
+  .lb-name {
+    flex: 1;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--dark);
+  }
+  .lb-score {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.4rem;
+    color: var(--orange);
+  }
+  .lb-empty {
+    font-size: 1rem;
+    color: var(--dark);
+    opacity: 0.5;
+    font-weight: 700;
+  }
+
+  /* Name input overlay */
+  #name-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255,249,230,0.92);
+    backdrop-filter: blur(6px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    z-index: 100;
+  }
+  #name-overlay.hidden { display: none; }
+  .name-prompt {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.6rem;
+    color: var(--dark);
+    text-align: center;
+  }
+  #name-input {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.4rem;
+    padding: 10px 20px;
+    border: 4px solid var(--dark);
+    border-radius: 16px;
+    width: 220px;
+    text-align: center;
+    background: var(--white);
+    box-shadow: 3px 3px 0 var(--dark);
+    outline: none;
+  }
+  .name-submit-btn {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.4rem;
+    color: var(--white);
+    background: var(--green);
+    border: 4px solid var(--dark);
+    border-radius: 16px;
+    padding: 10px 32px;
+    cursor: pointer;
+    box-shadow: 4px 4px 0 var(--dark);
+  }
+  .name-submit-btn:active { transform: translate(2px,2px); box-shadow: 2px 2px 0 var(--dark); }
+  #grass {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 50px;
+    background: var(--green);
+    border-top: 4px solid var(--dark);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-around;
+    overflow: hidden;
+    z-index: 1;
+  }
+
+  .grass-blade {
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-bottom: 20px solid #4aab5c;
+    margin-top: -16px;
+  }
+</style>
 </head>
 <body>
-    <h1>Hello, World!</h1>
+
+<!-- START SCREEN -->
+<div id="start-screen" class="screen">
+  <div class="game-title">Catch That Chicken!</div>
+  <div class="chicken-preview" id="preview-chicken">🐔</div>
+  <div class="subtitle">Tap the chicken before it escapes! 🥚</div>
+  <button class="start-btn" id="start-btn">PLAY! 🐔</button>
+  <div class="high-score-display" id="start-hi">Best: 0 chickens</div>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="game-screen" class="screen hidden">
+  <div id="hud">
+    <div class="hud-score" id="score-display">🐔 0</div>
+    <div class="hud-lives" id="lives-display">❤️❤️❤️❤️❤️❤️❤️❤️❤️❤️</div>
+  </div>
+  <div id="arena">
+    <div id="speech"></div>
+    <div id="chicken">🐔</div>
+    <div id="grass">
+      <!-- blades generated by JS -->
+    </div>
+  </div>
+  <div id="countdown-overlay">
+    <div class="countdown-num" id="countdown-num">3</div>
+  </div>
+</div>
+
+<!-- GAME OVER SCREEN -->
+<div id="gameover-screen" class="screen hidden">
+  <div class="gameover-emoji" id="go-emoji">😵</div>
+  <div class="gameover-title">She got away!</div>
+  <div class="final-score-box">
+    <div class="final-score-label">You caught</div>
+    <div class="final-score-num" id="final-score">0</div>
+    <div class="final-score-label">chickens</div>
+  </div>
+  <div id="new-record" class="new-record hidden">🏆 NEW RECORD!</div>
+  <div class="high-score-display" id="go-hi">Best: 0</div>
+  <button class="play-again-btn" id="play-again-btn">PLAY AGAIN! 🐔</button>
+  <button class="leaderboard-btn" id="go-lb-btn">🏆 Leaderboard</button>
+</div>
+
+<!-- LEADERBOARD SCREEN -->
+<div id="leaderboard-screen" class="screen hidden">
+  <div class="lb-title">🏆 Leaderboard</div>
+  <div id="lb-list" style="width:100%;max-width:340px;"></div>
+  <button class="leaderboard-btn" id="lb-back-btn">← Back</button>
+</div>
+
+<!-- START SCREEN leaderboard button is added below in JS -->
+
+<!-- NAME INPUT OVERLAY -->
+<div id="name-overlay" class="hidden">
+  <div class="name-prompt">New record! 🎉<br>Enter your name:</div>
+  <input id="name-input" type="text" maxlength="12" placeholder="Your name..." autocomplete="off"/>
+  <button class="name-submit-btn" id="name-submit-btn">Save 🐔</button>
+</div>
+
+<script>
+const SOUNDS = {
+  cluck: ['bwak!', 'bwak bwak!', 'BWAK BWAK BWAK!', 'cluck!', 'B-CAWK!', 'bwaaak!', 'bwak?!', 'CAAAWK!', 'bwak bwak bwak!', 'cooock-a-doodle...bwak!'],
+  caught: ['OUCH!', 'Got me!', 'CAAAAWK! 😱', 'Noooo!', 'Let go!', 'SQUAAAWK!'],
+  miss: ['Ha! Missed!', 'Too slow!', "Can't catch me!", 'Faster, human!']
+};
+
+// ── AUDIO ENGINE ──────────────────────────────────────────────
+let audioCtx = null;
+function getCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+// ---- COUNTDOWN SOUND ----
+// 3, 2, 1 = deep tense beep, each higher + reverb hit
+// GO! = triumphant fanfare burst
+function playCountdownBeep(number) {
+  const ctx = getCtx(), t = ctx.currentTime;
+
+  // Rising pitch: 3=220Hz, 2=330Hz, 1=440Hz
+  const freqs = { 3: 220, 2: 330, 1: 440 };
+  const freq = freqs[number] || 440;
+
+  // Main beep — square wave for punchy feel
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  const dist = ctx.createWaveShaper();
+
+  // Soft distortion curve for warmth
+  const curve = new Float32Array(256);
+  for (let i = 0; i < 256; i++) {
+    const x = (i * 2) / 256 - 1;
+    curve[i] = (Math.PI + 200) * x / (Math.PI + 200 * Math.abs(x));
+  }
+  dist.curve = curve;
+
+  osc.type = 'square';
+  osc.frequency.setValueAtTime(freq, t);
+  osc.frequency.setValueAtTime(freq * 1.005, t + 0.01); // tiny detune shimmer
+
+  gain.gain.setValueAtTime(0, t);
+  gain.gain.linearRampToValueAtTime(0.4, t + 0.01);
+  gain.gain.setValueAtTime(0.4, t + 0.08);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+
+  osc.connect(dist);
+  dist.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(t); osc.stop(t + 0.55);
+
+  // Low thud underneath
+  const thud = ctx.createOscillator();
+  const thudGain = ctx.createGain();
+  thud.type = 'sine';
+  thud.frequency.setValueAtTime(60, t);
+  thud.frequency.exponentialRampToValueAtTime(30, t + 0.2);
+  thudGain.gain.setValueAtTime(0.5, t);
+  thudGain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+  thud.connect(thudGain); thudGain.connect(ctx.destination);
+  thud.start(t); thud.stop(t + 0.3);
+
+  // Tension riser noise that builds each count
+  const bufSize = ctx.sampleRate * 0.4;
+  const buffer = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+  const noise = ctx.createBufferSource();
+  noise.buffer = buffer;
+  const noiseFilter = ctx.createBiquadFilter();
+  noiseFilter.type = 'bandpass';
+  noiseFilter.frequency.value = freq * 3;
+  noiseFilter.Q.value = 8;
+  const noiseGain = ctx.createGain();
+  noiseGain.gain.setValueAtTime(0, t);
+  noiseGain.gain.linearRampToValueAtTime(0.08 * (4 - number), t + 0.05);
+  noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+  noise.connect(noiseFilter); noiseFilter.connect(noiseGain); noiseGain.connect(ctx.destination);
+  noise.start(t);
+}
+
+function playGoSound() {
+  const ctx = getCtx(), t = ctx.currentTime;
+
+  // Fanfare: quick ascending arpeggio
+  const notes = [523, 659, 784, 1047]; // C5 E5 G5 C6
+  notes.forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.value = freq;
+    g.gain.setValueAtTime(0, t + i * 0.07);
+    g.gain.linearRampToValueAtTime(0.35, t + i * 0.07 + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, t + i * 0.07 + 0.25);
+    osc.connect(g); g.connect(ctx.destination);
+    osc.start(t + i * 0.07); osc.stop(t + i * 0.07 + 0.3);
+  });
+
+  // Big low boom
+  const boom = ctx.createOscillator();
+  const boomGain = ctx.createGain();
+  boom.type = 'sine';
+  boom.frequency.setValueAtTime(100, t);
+  boom.frequency.exponentialRampToValueAtTime(40, t + 0.3);
+  boomGain.gain.setValueAtTime(0.6, t);
+  boomGain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+  boom.connect(boomGain); boomGain.connect(ctx.destination);
+  boom.start(t); boom.stop(t + 0.4);
+}
+
+// ---- BACKGROUND MUSIC LOOP ----
+let bgInterval = null;
+let bgPlaying = false;
+
+function playBgNote(freq, startTime, duration, vol = 0.08) {
+  const ctx = getCtx();
+  const osc = ctx.createOscillator();
+  const g = ctx.createGain();
+  osc.type = 'triangle';
+  osc.frequency.value = freq;
+  g.gain.setValueAtTime(0, startTime);
+  g.gain.linearRampToValueAtTime(vol, startTime + 0.02);
+  g.gain.setValueAtTime(vol, startTime + duration - 0.05);
+  g.gain.linearRampToValueAtTime(0, startTime + duration);
+  osc.connect(g); g.connect(ctx.destination);
+  osc.start(startTime); osc.stop(startTime + duration + 0.01);
+}
+
+// Playful looping melody — 4-bar farm tune
+function scheduleBgLoop() {
+  if (!bgPlaying) return;
+  const ctx = getCtx();
+  const t = ctx.currentTime + 0.05;
+  const beat = 0.22; // tempo
+
+  // Melody (main)
+  const melody = [
+    [523,1],[587,1],[659,1],[698,1],
+    [784,2],[784,0],[659,1],[587,1],
+    [523,1],[659,1],[587,1],[523,2],
+    [494,1],[523,1],[587,1],[523,3],
+  ];
+  let offset = 0;
+  melody.forEach(([freq, dur]) => {
+    if (freq > 0) playBgNote(freq, t + offset * beat, dur * beat * 0.85, 0.07);
+    offset += dur;
+  });
+
+  // Bass line
+  const bass = [
+    [130,4],[146,4],[164,4],[130,4],
+  ];
+  let bOffset = 0;
+  bass.forEach(([freq, dur]) => {
+    playBgNote(freq, t + bOffset * beat, dur * beat * 0.7, 0.06);
+    bOffset += dur;
+  });
+
+  // Total loop duration
+  const totalBeats = melody.reduce((s, [, d]) => s + d, 0);
+  setTimeout(scheduleBgLoop, totalBeats * beat * 1000);
+}
+
+function musicPlay() {
+  if (bgPlaying) return;
+  bgPlaying = true;
+  scheduleBgLoop();
+}
+
+function musicPause() {
+  bgPlaying = false;
+}
+
+// ---- SFX ----
+const KUKURIKU = [
+  'kvo kvo', 'kvo kvo kvo', 'kvoooo',
+  'KVO KVO KVO', 'kvo kvo kvooo', 'kvo',
+];
+
+function playKukuriku() {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(
+    KUKURIKU[Math.floor(Math.random() * KUKURIKU.length)]
+  );
+  const voices = window.speechSynthesis.getVoices();
+  const voice = voices.find(v => v.lang.startsWith('en') || v.lang.startsWith('sr')) || voices[0];
+  if (voice) u.voice = voice;
+  u.pitch = 2;
+  u.rate = 1.4 + Math.random() * 0.4;
+  u.volume = 1;
+  window.speechSynthesis.speak(u);
+}
+
+function playCluck() {
+  const ctx = getCtx(), t = ctx.currentTime;
+  const count = 1 + Math.floor(Math.random() * 2);
+  for (let i = 0; i < count; i++) {
+    const o = ctx.createOscillator(), g = ctx.createGain(), f = ctx.createBiquadFilter();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(500 + Math.random()*120, t + i*0.13);
+    o.frequency.exponentialRampToValueAtTime(160, t + i*0.13 + 0.11);
+    f.type = 'bandpass'; f.frequency.value = 950; f.Q.value = 2.5;
+    g.gain.setValueAtTime(0.3, t + i*0.13);
+    g.gain.exponentialRampToValueAtTime(0.001, t + i*0.13 + 0.13);
+    o.connect(f); f.connect(g); g.connect(ctx.destination);
+    o.start(t + i*0.13); o.stop(t + i*0.13 + 0.14);
+  }
+}
+
+function playCaught() {
+  const ctx = getCtx(), t = ctx.currentTime;
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = 'sawtooth';
+  o.frequency.setValueAtTime(950, t);
+  o.frequency.exponentialRampToValueAtTime(180, t + 0.22);
+  g.gain.setValueAtTime(0.45, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+  o.connect(g); g.connect(ctx.destination);
+  o.start(t); o.stop(t + 0.26);
+}
+
+function playMiss() {
+  const ctx = getCtx(), t = ctx.currentTime;
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = 'sine';
+  o.frequency.setValueAtTime(320, t);
+  o.frequency.exponentialRampToValueAtTime(80, t + 0.22);
+  g.gain.setValueAtTime(0.25, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+  o.connect(g); g.connect(ctx.destination);
+  o.start(t); o.stop(t + 0.26);
+}
+
+function playGameOver() {
+  musicPause();
+  const ctx = getCtx(), t = ctx.currentTime;
+  [380, 330, 280, 190].forEach((freq, i) => {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sawtooth'; o.frequency.value = freq;
+    g.gain.setValueAtTime(0.28, t + i*0.18);
+    g.gain.exponentialRampToValueAtTime(0.001, t + i*0.18 + 0.2);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(t + i*0.18); o.stop(t + i*0.18 + 0.22);
+  });
+}
+// ──────────────────────────────────────────────────────────────
+
+const chickenEl = document.getElementById('chicken');
+const speechEl = document.getElementById('speech');
+const scoreEl = document.getElementById('score-display');
+const arenaEl = document.getElementById('arena');
+
+let score = 0;
+let misses = 0;
+const MAX_MISSES = 10;
+let timerInterval = null;
+let speechTimeout = null;
+let chickenX = 50, chickenY = 50;
+let targetX = 50, targetY = 50;
+let chickenSpeed = 3;
+let gameRunning = false;
+let highScore = parseInt(localStorage.getItem('kokoska_hi') || '0');
+let animFrame = null;
+let isCaught = false;
+
+// Generate grass
+const grass = document.getElementById('grass');
+for (let i = 0; i < 40; i++) {
+  const blade = document.createElement('div');
+  blade.className = 'grass-blade';
+  blade.style.height = (15 + Math.random() * 15) + 'px';
+  blade.style.opacity = 0.6 + Math.random() * 0.4;
+  grass.appendChild(blade);
+}
+
+// Update hi score displays
+function updateHiDisplay() {
+  document.getElementById('start-hi').textContent = `Best: ${highScore} chicken${highScore !== 1 ? 's' : ''}`;
+  document.getElementById('go-hi').textContent = `Best: ${highScore}`;
+}
+updateHiDisplay();
+
+// Screen management
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+
+// Speech bubble
+function showSpeech(text, x, y) {
+  speechEl.textContent = text;
+  speechEl.style.left = Math.min(x, window.innerWidth - 180) + 'px';
+  speechEl.style.top = Math.max(y - 60, 10) + 'px';
+  speechEl.classList.add('visible');
+  clearTimeout(speechTimeout);
+  speechTimeout = setTimeout(() => speechEl.classList.remove('visible'), 800);
+}
+
+// Score popup
+function showScorePop(x, y) {
+  const el = document.createElement('div');
+  el.className = 'score-pop';
+  el.textContent = '+1 🥚';
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  arenaEl.appendChild(el);
+  setTimeout(() => el.remove(), 800);
+}
+
+// Miss text
+function showMiss(x, y) {
+  const el = document.createElement('div');
+  el.className = 'miss-text';
+  el.textContent = SOUNDS.miss[Math.floor(Math.random() * SOUNDS.miss.length)];
+  el.style.left = Math.min(x, window.innerWidth - 120) + 'px';
+  el.style.top = y + 'px';
+  arenaEl.appendChild(el);
+  setTimeout(() => el.remove(), 700);
+}
+
+// Feathers
+function spawnFeathers(x, y) {
+  for (let i = 0; i < 6; i++) {
+    const f = document.createElement('div');
+    f.className = 'feather';
+    f.textContent = ['🪶', '✨', '💨'][i % 3];
+    const angle = (i / 6) * Math.PI * 2;
+    const dist = 40 + Math.random() * 60;
+    f.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+    f.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+    f.style.setProperty('--dr', (Math.random() * 360) + 'deg');
+    f.style.left = x + 'px';
+    f.style.top = y + 'px';
+    arenaEl.appendChild(f);
+    setTimeout(() => f.remove(), 800);
+  }
+}
+
+// Chicken movement AI
+function getArenaSize() {
+  const rect = arenaEl.getBoundingClientRect();
+  return { w: rect.width, h: rect.height - 60 };
+}
+
+function pickNewTarget(avoidX, avoidY) {
+  const { w, h } = getArenaSize();
+  const chicSize = chickenEl.offsetWidth || 60;
+  let tx, ty, tries = 0;
+  do {
+    tx = chicSize/2 + Math.random() * (w - chicSize);
+    ty = chicSize/2 + Math.random() * (h - chicSize - 20);
+    tries++;
+  } while (tries < 10 && Math.abs(tx - avoidX) < 80 && Math.abs(ty - avoidY) < 80);
+  return { tx, ty };
+}
+
+function moveChicken() {
+  if (!gameRunning) return;
+  const { w, h } = getArenaSize();
+  const chicSize = chickenEl.offsetWidth || 60;
+  
+  const dx = targetX - chickenX;
+  const dy = targetY - chickenY;
+  const dist = Math.sqrt(dx*dx + dy*dy);
+
+  if (dist < 10) {
+    // Reached target, pick new one
+    const { tx, ty } = pickNewTarget(chickenX, chickenY);
+    targetX = tx; targetY = ty;
+    // Random cluck
+    if (Math.random() < 0.4) {
+      const txt = SOUNDS.cluck[Math.floor(Math.random() * SOUNDS.cluck.length)];
+      showSpeech(txt, chickenX, chickenY);
+      playCluck();
+    }
+  } else {
+    const step = chickenSpeed * (0.8 + Math.random() * 0.5);
+    const nx = chickenX + (dx / dist) * step;
+    const ny = chickenY + (dy / dist) * step;
+    
+    // Clamp to arena
+    chickenX = Math.max(chicSize/2, Math.min(w - chicSize/2, nx));
+    chickenY = Math.max(chicSize/2, Math.min(h - chicSize/2, ny));
+    
+    // Face direction
+    if (dx < -5) { chickenEl.style.transform = 'scaleX(1)'; }
+    else if (dx > 5) { chickenEl.style.transform = 'scaleX(-1)'; }
+  }
+
+  chickenEl.style.left = (chickenX - chicSize/2) + 'px';
+  chickenEl.style.top = (chickenY - chicSize/2) + 'px';
+
+  animFrame = requestAnimationFrame(moveChicken);
+}
+
+// Update lives display
+function updateLives() {
+  const hearts = '❤️'.repeat(MAX_MISSES - misses) + '🖤'.repeat(misses);
+  const livesEl = document.getElementById('lives-display');
+  livesEl.textContent = hearts;
+  if (misses >= 7) livesEl.classList.add('danger');
+  else livesEl.classList.remove('danger');
+}
+
+// Show life lost popup
+function showLifeLost(x, y) {
+  const el = document.createElement('div');
+  el.className = 'life-lost';
+  el.textContent = '💔';
+  el.style.left = Math.min(x, window.innerWidth - 40) + 'px';
+  el.style.top = y + 'px';
+  arenaEl.appendChild(el);
+  setTimeout(() => el.remove(), 800);
+}
+
+// Chicken tap/click
+chickenEl.addEventListener('pointerdown', (e) => {
+  if (!gameRunning || isCaught) return;
+  e.stopPropagation();
+  isCaught = true;
+
+  const txt = SOUNDS.caught[Math.floor(Math.random() * SOUNDS.caught.length)];
+  showSpeech(txt, chickenX, chickenY);
+  spawnFeathers(chickenX, chickenY);
+  showScorePop(chickenX - 20, chickenY - 30);
+
+  score++;
+  scoreEl.textContent = '🐔 ' + score;
+
+  chickenEl.classList.add('caught');
+
+  // Chicken jolts then keeps running — pick new target immediately
+  const { tx, ty } = pickNewTarget(chickenX, chickenY);
+  targetX = tx; targetY = ty;
+  chickenSpeed = Math.min(3 + score * 0.2, 11);
+
+  setTimeout(() => {
+    chickenEl.classList.remove('caught');
+    isCaught = false;
+  }, 350);
+});
+
+// Miss tap
+arenaEl.addEventListener('pointerdown', (e) => {
+  if (!gameRunning) return;
+  const arenaTop = arenaEl.getBoundingClientRect().top;
+  misses++;
+  updateLives();
+  showMiss(e.clientX, e.clientY - arenaTop);
+  showLifeLost(e.clientX + 20, e.clientY - arenaTop - 20);
+  playMiss();
+  // Chicken taunts on miss
+  if (Math.random() < 0.5) {
+    const txt = SOUNDS.miss[Math.floor(Math.random() * SOUNDS.miss.length)];
+    showSpeech(txt, chickenX, chickenY);
+  }
+  if (misses >= MAX_MISSES) endGame();
+});
+
+// Countdown then start
+function startCountdown(cb) {
+  const overlay = document.getElementById('countdown-overlay');
+  const numEl = document.getElementById('countdown-num');
+  overlay.style.display = 'flex';
+  let count = 3;
+  
+  function tick() {
+    if (count === 0) {
+      numEl.textContent = 'GO! 🐔';
+      numEl.style.animation = 'none';
+      void numEl.offsetWidth;
+      numEl.style.animation = 'countPop 0.8s cubic-bezier(0.68,-0.55,0.265,1.55) forwards';
+      playGoSound();
+      setTimeout(() => {
+        overlay.style.display = 'none';
+        cb();
+      }, 700);
+      return;
+    }
+    numEl.textContent = count;
+    numEl.style.animation = 'none';
+    void numEl.offsetWidth;
+    numEl.style.animation = 'countPop 1s cubic-bezier(0.68,-0.55,0.265,1.55) forwards';
+    playCountdownBeep(count);
+    count--;
+    setTimeout(tick, 900);
+  }
+  tick();
+}
+
+function startGame() {
+  score = 0;
+  misses = 0;
+  chickenSpeed = 3;
+  isCaught = false;
+  gameRunning = false;
+
+  scoreEl.textContent = '🐔 0';
+  updateLives();
+  speechEl.classList.remove('visible');
+
+  const { w, h } = getArenaSize();
+  chickenX = w / 2;
+  chickenY = h / 2;
+  const { tx, ty } = pickNewTarget(chickenX, chickenY);
+  targetX = tx; targetY = ty;
+
+  showScreen('game-screen');
+
+  startCountdown(() => {
+    gameRunning = true;
+    musicPlay();
+    animFrame = requestAnimationFrame(moveChicken);
+  });
+}
+
+function endGame() {
+  gameRunning = false;
+  cancelAnimationFrame(animFrame);
+  playGameOver();
+
+  const isRecord = score > highScore;
+  if (isRecord) {
+    highScore = score;
+    localStorage.setItem('kokoska_hi', highScore);
+    updateHiDisplay();
+  }
+
+  document.getElementById('final-score').textContent = score;
+  const recEl = document.getElementById('new-record');
+  recEl.classList.toggle('hidden', !(isRecord && score > 0));
+
+  document.querySelector('.gameover-title').textContent = misses >= MAX_MISSES ? 'Too many misses! 😤' : 'Game Over!';
+
+  const goEmoji = document.getElementById('go-emoji');
+  goEmoji.textContent = score === 0 ? '😅' : score < 5 ? '😤' : score < 10 ? '😄' : '🏆';
+
+  setTimeout(() => {
+    showScreen('gameover-screen');
+    if (score > 0) promptName(score);
+  }, 300);
+}
+
+// ── LEADERBOARD ───────────────────────────────────────────────
+const MEDALS = ['🥇','🥈','🥉'];
+
+function getLeaderboard() {
+  try { return JSON.parse(localStorage.getItem('kokoska_lb') || '[]'); }
+  catch { return []; }
+}
+
+function saveLeaderboard(lb) {
+  localStorage.setItem('kokoska_lb', JSON.stringify(lb));
+}
+
+function addToLeaderboard(name, score) {
+  const lb = getLeaderboard();
+  lb.push({ name: name.trim() || 'Anonymous', score, date: new Date().toLocaleDateString() });
+  lb.sort((a, b) => b.score - a.score);
+  lb.splice(10); // keep top 10
+  saveLeaderboard(lb);
+}
+
+function renderLeaderboard() {
+  const lb = getLeaderboard();
+  const el = document.getElementById('lb-list');
+  if (!lb.length) {
+    el.innerHTML = '<div class="lb-empty">No scores yet — go catch some chickens! 🐔</div>';
+    return;
+  }
+  el.innerHTML = lb.map((entry, i) => `
+    <div class="lb-row" style="animation-delay:${i*0.06}s">
+      <span class="lb-rank">${MEDALS[i] || (i+1)+'.'}</span>
+      <span class="lb-name">${entry.name}</span>
+      <span class="lb-score">🐔 ${entry.score}</span>
+    </div>
+  `).join('');
+}
+
+// Name input flow
+let pendingScore = 0;
+function promptName(score) {
+  pendingScore = score;
+  document.getElementById('name-input').value = '';
+  document.getElementById('name-overlay').classList.remove('hidden');
+  setTimeout(() => document.getElementById('name-input').focus(), 100);
+}
+
+document.getElementById('name-submit-btn').addEventListener('click', () => {
+  const name = document.getElementById('name-input').value || 'Anonymous';
+  addToLeaderboard(name, pendingScore);
+  document.getElementById('name-overlay').classList.add('hidden');
+});
+
+document.getElementById('name-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('name-submit-btn').click();
+});
+
+// Nav buttons
+document.getElementById('go-lb-btn').addEventListener('click', () => {
+  renderLeaderboard();
+  showScreen('leaderboard-screen');
+});
+document.getElementById('lb-back-btn').addEventListener('click', () => showScreen('gameover-screen'));
+
+// Add leaderboard button to start screen
+const startLbBtn = document.createElement('button');
+startLbBtn.className = 'leaderboard-btn';
+startLbBtn.textContent = '🏆 Leaderboard';
+startLbBtn.addEventListener('click', () => { renderLeaderboard(); showScreen('leaderboard-screen'); });
+document.getElementById('start-screen').appendChild(startLbBtn);
+// ──────────────────────────────────────────────────────────────
+
+document.getElementById('start-btn').addEventListener('click', startGame);
+document.getElementById('play-again-btn').addEventListener('click', startGame);
+
+// Preview chicken dance
+document.getElementById('preview-chicken').addEventListener('click', () => {
+  const el = document.getElementById('preview-chicken');
+  const txt = SOUNDS.cluck[Math.floor(Math.random() * SOUNDS.cluck.length)];
+  el.textContent = '🐔 ' + txt;
+  setTimeout(() => el.textContent = '🐔', 600);
+});
+</script>
 </body>
 </html>
